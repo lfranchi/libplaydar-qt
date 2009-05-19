@@ -54,10 +54,10 @@ PlaydarAuthRequest::onAuth1Finished()
         QVariant data = JsonQt::JsonToVariant::parse( ba );
         if( data.type() != QVariant::Map )
             fail("bad json in auth1 response");
-        QMap parsed = data.toMap();
+        QMap<QString, QVariant> parsed = data.toMap();
 
         QVariant v = parsed["formtoken"];
-        if( v.type() != QVariant::QString )
+        if( v.type() != QVariant::String )
             fail("bad json in auth1 response");
         ParamList params;
         QUrl url = m_api.auth2( m_applicationName, v.toString(), params );
@@ -92,10 +92,10 @@ PlaydarAuthRequest::onAuth2Finished()
         QVariant data = JsonQt::JsonToVariant::parse( ba );
         if( data.type() != QVariant::Map )
             fail("");
-        QMap parsed = data.toMap();
+        QMap< QString, QVariant > parsed = data.toMap();
 
         QVariant v = parsed["authtoken"];
-        if(v.type() != QString )
+        if(v.type() != QVariant::String )
             fail("bad json in auth2 response");
         emit authed( v.toString() );
         return;
