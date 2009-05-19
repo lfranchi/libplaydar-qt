@@ -1,0 +1,3 @@
+[submodule "JsonQt"]
+	path = JsonQt
+	url = git://github.com/Ramblurr/JsonQt.git
