@@ -1,4 +1,5 @@
 /***************************************************************************
+ *   Copyright 2009 Casey Link <unnamedrambler@gmail.com>                  *
  *   Copyright 2009 Last.fm Ltd.                                           *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -19,10 +20,10 @@
 
 #include <QNetworkReply>
 #include "PlaydarAuthRequest.h"
-#include <lastfm/NetworkAccessManager>
-#include "jsonGetMember.h"
+#include <QtNetwork/QNetworkAccessManager>
+#include "JsonQt/lib/JsonToVariant.h"
 
-PlaydarAuthRequest::PlaydarAuthRequest(lastfm::NetworkAccessManager* wam, PlaydarApi& api)
+PlaydarAuthRequest::PlaydarAuthRequest(QNetworkAccessManager* wam, PlaydarApi& api)
 :m_wam(wam)
 ,m_api(api)
 {
@@ -45,40 +46,39 @@ void
 PlaydarAuthRequest::onAuth1Finished()
 {
     QNetworkReply *reply = (QNetworkReply*) sender();
-    if (reply->error() == QNetworkReply::NoError) {
+    if (reply->error() == QNetworkReply::NoError)
+    {
         using namespace std;
 
-        json_spirit::Value v;
         QByteArray ba( reply->readAll() );
-        if (json_spirit::read( string( ba.constData(), ba.size() ), v) ) {
-            string formtoken;
-            if (jsonGetMember(v, "formtoken", formtoken)) {
-                ParamList params;
-                QUrl url = m_api.auth2( m_applicationName, QString::fromStdString(formtoken), params );
+        QVariant data = JsonQt::JsonToVariant::parse( ba );
+        if( data.type() != QVariant::Map )
+            fail("bad json in auth1 response");
+        QMap parsed = data.toMap();
 
-                // form encode:
-			    QByteArray form;
-                typedef QPair<QString,QString> Param;
-			    foreach (Param p, params) {
-                    if (form.size()) {
-                        form += "&";
-                    }
-				    form += QUrl::toPercentEncoding( p.first ) + "="
-					      + QUrl::toPercentEncoding( p.second );
-			    }
+        QVariant v = parsed["formtoken"];
+        if( v.type() != QVariant::QString )
+            fail("bad json in auth1 response");
+        ParamList params;
+        QUrl url = m_api.auth2( m_applicationName, v.toString(), params );
 
-                QNetworkReply* auth2Reply = m_wam->post(QNetworkRequest(url), form);
-                if (auth2Reply) {
-                    connect(auth2Reply, SIGNAL(finished()), SLOT(onAuth2Finished()));
-                    return;
-                }
-                fail("couldn't issue auth_2 request");
+        // form encode:
+        QByteArray form;
+        typedef QPair<QString,QString> Param;
+        foreach (Param p, params) {
+            if (form.size()) {
+                form += "&";
             }
+            form += QUrl::toPercentEncoding( p.first ) + "="
+                    + QUrl::toPercentEncoding( p.second );
         }
-        fail("bad json in auth1 response");
+        QNetworkReply* auth2Reply = m_wam->post(QNetworkRequest(url), form);
+        if (auth2Reply) {
+            connect(auth2Reply, SIGNAL(finished()), SLOT(onAuth2Finished()));
+            return;
+        }
+        fail("couldn't issue auth_2 request");
     }
-    fail("");
-
 }
 
 void
@@ -88,16 +88,17 @@ PlaydarAuthRequest::onAuth2Finished()
     if (reply->error() == QNetworkReply::NoError) {
         using namespace std;
 
-        json_spirit::Value v;
         QByteArray ba( reply->readAll() );
-        if (json_spirit::read( string( ba.constData(), ba.size() ), v) ) {
-            string authtoken;
-            if (jsonGetMember(v, "authtoken", authtoken)) {
-                emit authed(QString::fromStdString(authtoken));
-                return;
-            }
-        }
-        fail("bad json in auth2 response");
+        QVariant data = JsonQt::JsonToVariant::parse( ba );
+        if( data.type() != QVariant::Map )
+            fail("");
+        QMap parsed = data.toMap();
+
+        QVariant v = parsed["authtoken"];
+        if(v.type() != QString )
+            fail("bad json in auth2 response");
+        emit authed( v.toString() );
+        return;
     }
     fail("");
 }

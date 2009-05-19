@@ -1,4 +1,5 @@
 /***************************************************************************
+ *   Copyright 2009 Casey Link <unnamedrambler@gmail.com>                  *
  *   Copyright 2009 Last.fm Ltd.                                           *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -21,7 +22,7 @@
 #define PLAYDAR_AUTH_REQUEST_H
 
 #include "PlaydarApi.h"
-#include <lastfm/global.h>
+#include <QtNetwork/QNetworkAccessManager>
 #include <QObject>
 
 
@@ -31,7 +32,7 @@ class PlaydarAuthRequest
     Q_OBJECT
 
 public:
-    PlaydarAuthRequest(lastfm::NetworkAccessManager* wam, PlaydarApi& api);
+    PlaydarAuthRequest(QNetworkAccessManager* wam, PlaydarApi& api);
     void start(QString applicationName);
 
 signals:
@@ -45,7 +46,7 @@ private slots:
 private:
     void fail(const char* message);
 
-    lastfm::NetworkAccessManager* m_wam;
+    QNetworkAccessManager* m_wam;
     PlaydarApi m_api;
     QString m_applicationName;
 };
