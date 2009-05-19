@@ -1,3 +1,4 @@
 [Project]
-Manager=KDevCMakeManager
 Name=libplaydar-qt
+Manager=KDevCMakeManager
+VersionControl=
